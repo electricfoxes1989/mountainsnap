@@ -131,16 +131,22 @@ export function UploadForm({
             {pending ? "Envoi en cours…" : "PUBLIER"}
           </button>
           <p className="text-xs text-muted text-center leading-relaxed">
-            Publication immédiate · Photographie publique · Aucune information
-            personnelle requise.
+            Votre photographie sera validée par l&rsquo;équipe scientifique
+            avant publication · Aucune information personnelle requise.
           </p>
         </div>
       )}
 
       {state?.ok && (
-        <p className="mt-6 text-center font-display font-bold text-primary">
-          Merci ! Votre photographie a été publiée.
-        </p>
+        <div className="mt-6 text-center">
+          <p className="font-display font-bold text-primary text-lg">
+            Merci ! Votre photographie a été reçue.
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Elle sera publiée dans la galerie après validation par
+            l&rsquo;équipe scientifique.
+          </p>
+        </div>
       )}
       {state && !state.ok && (
         <p className="mt-6 text-center text-sm text-red-700">{state.error}</p>

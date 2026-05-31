@@ -27,14 +27,24 @@ export const structure: StructureResolver = (S) =>
             .defaultOrdering([{ field: "number", direction: "asc" }])
         ),
 
-      // Photos — chronological
+      // Photos: pending queue + full archive
       S.listItem()
-        .title("Photographies")
+        .title("⏳ Photos en attente de validation")
+        .icon(() => "⏳")
+        .schemaType("photo")
+        .child(
+          S.documentTypeList("photo")
+            .title("En attente de validation")
+            .filter('_type == "photo" && status == "pending"')
+            .defaultOrdering([{ field: "uploadedAt", direction: "desc" }])
+        ),
+      S.listItem()
+        .title("Photographies (toutes)")
         .schemaType("photo")
         .child(
           S.documentTypeList("photo")
             .title("Photographies")
-            .defaultOrdering([{ field: "takenAt", direction: "desc" }])
+            .defaultOrdering([{ field: "uploadedAt", direction: "desc" }])
         ),
 
       S.divider(),

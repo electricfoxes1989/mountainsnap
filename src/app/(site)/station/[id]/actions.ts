@@ -83,6 +83,7 @@ export async function uploadPhoto(
 
     await writeClient.create({
       _type: "photo",
+      status: "pending",
       station: { _type: "reference", _ref: stationId },
       image: { _type: "image", asset: { _type: "reference", _ref: asset._id } },
       takenAt: takenAt ?? now,

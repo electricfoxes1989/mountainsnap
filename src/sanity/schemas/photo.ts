@@ -6,6 +6,20 @@ export const photo = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "status",
+      title: "Statut",
+      type: "string",
+      initialValue: "pending",
+      options: {
+        list: [
+          { value: "pending", title: "En attente de validation" },
+          { value: "approved", title: "Approuvée — publiée" },
+        ],
+        layout: "radio",
+      },
+      validation: (r) => r.required(),
+    }),
+    defineField({
       name: "station",
       title: "Station",
       type: "reference",
@@ -53,13 +67,19 @@ export const photo = defineType({
     },
   ],
   preview: {
-    select: { stationName: "station.name", takenAt: "takenAt", media: "image" },
-    prepare({ stationName, takenAt, media }) {
+    select: {
+      stationName: "station.name",
+      takenAt: "takenAt",
+      media: "image",
+      status: "status",
+    },
+    prepare({ stationName, takenAt, media, status }) {
       const date = takenAt
         ? new Date(takenAt).toLocaleDateString("fr-FR")
         : "Date inconnue";
+      const badge = status === "approved" ? "✓" : "⏳";
       return {
-        title: stationName ? `${stationName}` : "Photographie",
+        title: `${badge} ${stationName ?? "Photographie"}`,
         subtitle: date,
         media,
       };

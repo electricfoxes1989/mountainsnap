@@ -36,7 +36,7 @@ const stationBySlugQuery = defineQuery(`
 `);
 
 const photosByStationQuery = defineQuery(`
-  *[_type == "photo" && station._ref == $stationId] | order(takenAt desc) {
+  *[_type == "photo" && station._ref == $stationId && status == "approved"] | order(takenAt desc) {
     _id, takenAt, uploadedAt, image
   }
 `);
@@ -44,13 +44,13 @@ const photosByStationQuery = defineQuery(`
 const stationsWithPreviewQuery = defineQuery(`
   *[_type == "station"] | order(number asc) {
     _id, number, name, "slug": slug.current, altitude, location,
-    "photos": *[_type == "photo" && station._ref == ^._id] | order(takenAt desc)[0...5] {
+    "photos": *[_type == "photo" && station._ref == ^._id && status == "approved"] | order(takenAt desc)[0...5] {
       _id, image, takenAt
     }
   }
 `);
 
-const photoCountQuery = defineQuery(`count(*[_type == "photo"])`);
+const photoCountQuery = defineQuery(`count(*[_type == "photo" && status == "approved"])`);
 
 export type StationWithPreview = StationDoc & { photos: PhotoDoc[] };
 
