@@ -18,10 +18,10 @@ export default defineConfig({
     structureTool({ structure }),
     visionTool({ defaultApiVersion: apiVersion }),
   ],
-  // Prevent the homePage singleton from being duplicated or deleted via the Studio
+  // Prevent the homePage / siteSettings singletons from being duplicated or deleted via the Studio
   document: {
     actions: (prev, { schemaType }) =>
-      schemaType === "homePage"
+      schemaType === "homePage" || schemaType === "siteSettings"
         ? prev.filter(
             ({ action }) =>
               action !== "duplicate" && action !== "delete" && action !== "unpublish"
@@ -29,7 +29,9 @@ export default defineConfig({
         : prev,
     newDocumentOptions: (prev, { creationContext }) =>
       creationContext.type === "global"
-        ? prev.filter((t) => t.templateId !== "homePage")
+        ? prev.filter(
+            (t) => t.templateId !== "homePage" && t.templateId !== "siteSettings"
+          )
         : prev,
   },
 });

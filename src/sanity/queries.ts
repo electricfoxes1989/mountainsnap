@@ -72,16 +72,34 @@ export type HomeDoc = {
   agungTitle?: string;
   agungBody?: string;
   agungStatus?: string;
-  contactName?: string;
-  contactRole?: string;
-  contactEmail?: string;
-  contactAffiliation?: string;
 };
 
 const homePageQuery = defineQuery(`*[_type == "homePage"][0]`);
 
 export async function getHomePage(): Promise<HomeDoc | null> {
   return client.fetch(homePageQuery, {}, { next: { revalidate: 60 } });
+}
+
+// — Site settings singleton (global chrome: nav, footer, contact)
+export type SiteSettings = {
+  siteName?: string;
+  siteDescription?: string;
+  navLinks?: { label: string; href: string }[];
+  footerScienceTitle?: string;
+  footerScienceLines?: string[];
+  footerOpenDataTitle?: string;
+  footerOpenDataText?: string;
+  footerTagline?: string;
+  contactName?: string;
+  contactRole?: string;
+  contactEmail?: string;
+  contactAffiliation?: string;
+};
+
+const siteSettingsQuery = defineQuery(`*[_type == "siteSettings"][0]`);
+
+export async function getSiteSettings(): Promise<SiteSettings | null> {
+  return client.fetch(siteSettingsQuery, {}, { next: { revalidate: 60 } });
 }
 
 // — Publications

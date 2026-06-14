@@ -9,7 +9,6 @@ export const homePage = defineType({
     { name: "project", title: "Le projet" },
     { name: "howItWorks", title: "Observe / Snap / Share" },
     { name: "agung", title: "Mont Agung" },
-    { name: "contact", title: "Contact" },
   ],
   fields: [
     // — Hero
@@ -116,18 +115,6 @@ export const homePage = defineType({
       type: "string",
       description: "Ex : « Stations à venir »",
       group: "agung",
-    }),
-
-    // — Contact
-    defineField({ name: "contactName", title: "Nom", type: "string", group: "contact" }),
-    defineField({ name: "contactRole", title: "Fonction", type: "string", group: "contact" }),
-    defineField({ name: "contactEmail", title: "E-mail", type: "string", group: "contact" }),
-    defineField({
-      name: "contactAffiliation",
-      title: "Affiliation",
-      type: "text",
-      rows: 2,
-      group: "contact",
     }),
   ],
   preview: {

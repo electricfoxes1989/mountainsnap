@@ -140,7 +140,7 @@ export function UploadForm({
       {state?.ok && (
         <div className="mt-6 text-center">
           <p className="font-display font-bold text-primary text-lg">
-            Merci ! Votre photographie a été reçue.
+            Merci pour votre envoi !
           </p>
           <p className="mt-1 text-sm text-muted">
             Elle sera publiée dans la galerie après validation par

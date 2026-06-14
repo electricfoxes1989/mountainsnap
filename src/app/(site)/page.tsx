@@ -5,6 +5,7 @@ import {
   getHomePage,
   getPublications,
   getPartners,
+  getSiteSettings,
 } from "@/sanity/queries";
 import { urlFor } from "@/sanity/image";
 import { ContourLines } from "@/components/graphics/SectionDivider";
@@ -26,11 +27,12 @@ function paragraphs(text?: string): string[] {
 }
 
 export default async function Home() {
-  const [stations, home, publications, partners] = await Promise.all([
+  const [stations, home, publications, partners, settings] = await Promise.all([
     getStationsWithPreview(),
     getHomePage(),
     getPublications(),
     getPartners(),
+    getSiteSettings(),
   ]);
 
   const heroTitle = home?.heroTitle ?? "MountainSnap";
@@ -78,11 +80,11 @@ export default async function Home() {
     "Le programme s'étendra prochainement aux pentes du Mont Agung, volcan actif de Bali. De nouvelles stations seront installées en collaboration avec les communautés locales pour documenter les risques volcaniques et les transformations du paysage.";
   const agungStatus = home?.agungStatus ?? "Stations à venir";
 
-  const contactName = home?.contactName ?? "Anna Minnema";
-  const contactRole = home?.contactRole ?? "coordinatrice scientifique";
-  const contactEmail = home?.contactEmail ?? "Anna.minnema@univ-paris1.fr";
+  const contactName = settings?.contactName ?? "Anna Minnema";
+  const contactRole = settings?.contactRole ?? "coordinatrice scientifique";
+  const contactEmail = settings?.contactEmail ?? "Anna.minnema@univ-paris1.fr";
   const contactAffiliation =
-    home?.contactAffiliation ??
+    settings?.contactAffiliation ??
     "Université Paris 1 Panthéon-Sorbonne · Laboratoire de Géographie Physique";
 
   return (
