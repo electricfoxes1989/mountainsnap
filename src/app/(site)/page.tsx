@@ -49,6 +49,9 @@ export default async function Home() {
     home?.projectTitle ??
     "MountainSnap, un projet de science participative au cœur de la recherche sur les risques naturels et les paysages.";
   const projectParas = paragraphs(home?.projectBody);
+  const projectImage = home?.projectImage
+    ? urlFor(home.projectImage as never).width(1600).quality(85).url()
+    : null;
 
   const howImage = home?.howItWorksImage
     ? urlFor(home.howItWorksImage as never).width(1600).quality(85).url()
@@ -178,6 +181,17 @@ export default async function Home() {
               {projectParas.map((p, i) => (
                 <p key={i}>{p}</p>
               ))}
+            </div>
+          )}
+          {projectImage && (
+            <div className="mt-14 mx-auto max-w-4xl aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-border relative">
+              <Image
+                src={projectImage}
+                alt="Illustration du projet MountainSnap"
+                fill
+                sizes="(min-width: 1024px) 56rem, 100vw"
+                className="object-cover"
+              />
             </div>
           )}
         </div>

@@ -67,6 +67,7 @@ export type HomeDoc = {
   heroCtaSecondary?: string;
   projectTitle?: string;
   projectBody?: string;
+  projectImage?: unknown;
   howItWorksImage?: unknown;
   howItWorksSteps?: { number: string; title: string; body?: string }[];
   agungTitle?: string;

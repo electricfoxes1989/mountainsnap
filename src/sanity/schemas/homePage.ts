@@ -64,6 +64,15 @@ export const homePage = defineType({
         "Séparez les paragraphes par une ligne vide (touche Entrée deux fois).",
       group: "project",
     }),
+    defineField({
+      name: "projectImage",
+      title: "Image du projet",
+      type: "image",
+      options: { hotspot: true },
+      group: "project",
+      description:
+        "Cliquez sur la zone ci-dessous (ou glissez-y un fichier) pour téléverser une image illustrant le projet — travail de terrain, paysage, station d'observation. Elle s'affichera sous le texte. Format paysage recommandé, largeur idéale ≥ 1600 px. Astuce : après l'envoi, déplacez le point de recadrage sur la partie la plus importante de l'image. N'oubliez pas de cliquer sur « Publier » en haut à droite.",
+    }),
 
     // — How it works
     defineField({
