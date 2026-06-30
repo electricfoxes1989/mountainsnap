@@ -10,8 +10,40 @@ import {
 import { urlFor } from "@/sanity/image";
 import { ContourLines } from "@/components/graphics/SectionDivider";
 import { LiveStats } from "@/components/LiveStats";
+import { SITE_URL } from "@/lib/seo";
+import type { Metadata } from "next";
 
 export const revalidate = 60;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const home = await getHomePage();
+  const title =
+    "MountainSnap — Photographier l'évolution des paysages du Mercantour";
+  const description =
+    home?.heroTagline ??
+    "Un projet de recherche participative dans le Mercantour. Photographiez les paysages depuis des points d'observation fixes pour suivre leur évolution dans le temps.";
+  const ogImage = home?.heroImage
+    ? urlFor(home.heroImage as never)
+        .width(1200)
+        .height(630)
+        .fit("crop")
+        .quality(85)
+        .url()
+    : undefined;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: "/" },
+    openGraph: {
+      title,
+      description,
+      url: SITE_URL,
+      ...(ogImage ? { images: [{ url: ogImage, width: 1200, height: 630 }] } : {}),
+    },
+    twitter: ogImage ? { images: [ogImage] } : undefined,
+  };
+}
 
 const FALLBACK_HERO =
   "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=2400&q=80";
@@ -92,6 +124,31 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebSite",
+                "@id": `${SITE_URL}/#website`,
+                url: SITE_URL,
+                name: "MountainSnap",
+                inLanguage: "fr",
+                description: heroTagline,
+              },
+              {
+                "@type": "Organization",
+                "@id": `${SITE_URL}/#organization`,
+                name: "MountainSnap",
+                url: SITE_URL,
+                description: heroTagline,
+              },
+            ],
+          }),
+        }}
+      />
       {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <Image

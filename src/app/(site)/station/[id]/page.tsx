@@ -4,6 +4,8 @@ import { getAllStations, getStationBySlug, getPhotosByStation } from "@/sanity/q
 import { UploadForm } from "@/components/UploadForm";
 import { Gallery } from "@/components/Gallery";
 import { ContourLines } from "@/components/graphics/SectionDivider";
+import { urlFor } from "@/sanity/image";
+import { SITE_URL } from "@/lib/seo";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
@@ -21,9 +23,31 @@ export async function generateMetadata({
   const { id } = await params;
   const station = await getStationBySlug(id);
   if (!station) return {};
+  const title = `Station n°${station.number} — ${station.name}`;
+  const description =
+    station.description ??
+    `Point d'observation n°${station.number} dans le Mercantour : ${station.name}. Photographiez le paysage depuis le repère fixe pour suivre son évolution.`;
+  const canonical = `/station/${station.slug}`;
+  const ogImage = station.heroImage
+    ? urlFor(station.heroImage as never)
+        .width(1200)
+        .height(630)
+        .fit("crop")
+        .quality(85)
+        .url()
+    : undefined;
   return {
-    title: `Station n°${station.number} — ${station.name}`,
-    description: station.description,
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: `${SITE_URL}${canonical}`,
+      ...(ogImage ? { images: [{ url: ogImage, width: 1200, height: 630 }] } : {}),
+    },
+    twitter: ogImage ? { images: [ogImage] } : undefined,
   };
 }
 
@@ -43,6 +67,29 @@ export default async function StationPage({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Accueil",
+                item: SITE_URL,
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: `Station n°${station.number} — ${station.name}`,
+                item: `${SITE_URL}/station/${station.slug}`,
+              },
+            ],
+          }),
+        }}
+      />
       {/* Mauve banner */}
       <div className="bg-mauve text-white text-center py-3">
         <p className="font-display font-extrabold tracking-wide text-sm md:text-base">
