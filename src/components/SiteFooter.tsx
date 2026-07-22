@@ -1,29 +1,26 @@
 import { MountainLogo } from "./graphics/MountainLogo";
 import { getSiteSettings } from "@/sanity/queries";
+import { dict, type Lang } from "@/lib/i18n";
 
-const DEFAULT_DESCRIPTION =
-  "Une recherche participative sur l’évolution des paysages de montagne et les risques naturels associés — du Mercantour au Mont Agung.";
 const DEFAULT_SCIENCE_LINES = [
   "Université Paris 1 Panthéon-Sorbonne",
   "Laboratoire de Géographie Physique (UMR 8591)",
   "Parc national du Mercantour · CNRS",
 ];
-const DEFAULT_OPEN_DATA =
-  "Les photographies déposées sont publiques et téléchargeables, dans l’esprit de la science participative.";
 
-export async function SiteFooter() {
-  const settings = await getSiteSettings();
+export async function SiteFooter({ lang }: { lang: Lang }) {
+  const t = dict[lang];
+  const settings = await getSiteSettings(lang);
   const siteName = settings?.siteName ?? "Mountainsnap";
-  const description = settings?.siteDescription ?? DEFAULT_DESCRIPTION;
-  const scienceTitle = settings?.footerScienceTitle ?? "Cadre scientifique";
+  const description = settings?.siteDescription ?? t.footerDescription;
+  const scienceTitle = settings?.footerScienceTitle ?? t.footerScienceTitle;
   const scienceLines =
     settings?.footerScienceLines && settings.footerScienceLines.length > 0
       ? settings.footerScienceLines
       : DEFAULT_SCIENCE_LINES;
-  const openDataTitle = settings?.footerOpenDataTitle ?? "Données ouvertes";
-  const openDataText = settings?.footerOpenDataText ?? DEFAULT_OPEN_DATA;
-  const tagline =
-    settings?.footerTagline ?? "Mercantour, Alpes-Maritimes · Mont Agung, Bali";
+  const openDataTitle = settings?.footerOpenDataTitle ?? t.footerOpenDataTitle;
+  const openDataText = settings?.footerOpenDataText ?? t.footerOpenDataText;
+  const tagline = settings?.footerTagline ?? t.footerTagline;
 
   return (
     <footer className="bg-foreground text-white">

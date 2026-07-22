@@ -1,34 +1,31 @@
 import { getLiveStats } from "@/lib/stats";
+import { dict, type Lang } from "@/lib/i18n";
 
-const numberFormatter = new Intl.NumberFormat("fr-FR");
-
-function fmt(n: number) {
-  return numberFormatter.format(n);
-}
-
-export async function LiveStats({ className = "" }: { className?: string }) {
+export async function LiveStats({
+  lang,
+  className = "",
+}: {
+  lang: Lang;
+  className?: string;
+}) {
+  const t = dict[lang];
   const stats = await getLiveStats();
+  const numberFormatter = new Intl.NumberFormat(t.dateLocale);
 
   const items = [
     {
       value: stats.daysSinceLaunch,
-      label: stats.daysSinceLaunch === 1 ? "jour d'archive" : "jours d'archive",
+      label: t.statsDays(stats.daysSinceLaunch),
       live: true,
     },
     {
       value: stats.photoCount,
-      label:
-        stats.photoCount === 1
-          ? "photographie déposée"
-          : "photographies déposées",
+      label: t.statsPhotos(stats.photoCount),
       live: true,
     },
     {
       value: stats.stationCount,
-      label:
-        stats.stationCount === 1
-          ? "station active"
-          : "stations actives",
+      label: t.statsStations(stats.stationCount),
     },
   ];
 
@@ -45,11 +42,11 @@ export async function LiveStats({ className = "" }: { className?: string }) {
             {it.label}
           </dt>
           <dd className="order-1 font-serif text-3xl sm:text-4xl lg:text-5xl text-primary leading-none flex items-baseline gap-2">
-            {fmt(it.value)}
+            {numberFormatter.format(it.value)}
             {it.live && (
               <span
                 className="inline-block w-1.5 h-1.5 rounded-full bg-warm animate-pulse"
-                aria-label="en direct"
+                aria-label={t.liveAria}
               />
             )}
           </dd>

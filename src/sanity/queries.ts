@@ -1,11 +1,20 @@
 import { defineQuery } from "next-sanity";
 import { client } from "./client";
+import type { Lang, Region } from "@/lib/i18n";
+
+// Localized fields are stored as { fr, en, id } objects in Sanity.
+// The `string(field)` arm keeps queries working while content is still in the
+// old plain-string (French) shape — pre-migration documents resolve to their
+// original French value for every language.
+const loc = (field: string) =>
+  `"${field}": coalesce(${field}[$lang], ${field}.fr, string(${field}))`;
 
 export type StationDoc = {
   _id: string;
   number: number;
   name: string;
   slug: string;
+  region: Region;
   location?: string;
   altitude?: string;
   bearing?: string;
@@ -21,18 +30,22 @@ export type PhotoDoc = {
   image: unknown;
 };
 
+const STATION_FIELDS = `
+  _id, number, name, "slug": slug.current,
+  "region": coalesce(region, "mercantour"),
+  location, altitude,
+  ${loc("bearing")},
+  ${loc("description")},
+  ${loc("pedagogicalText")},
+  heroImage
+`;
+
 const allStationsQuery = defineQuery(`
-  *[_type == "station"] | order(number asc) {
-    _id, number, name, "slug": slug.current,
-    location, altitude, bearing, description, pedagogicalText, heroImage
-  }
+  *[_type == "station"] | order(number asc) { ${STATION_FIELDS} }
 `);
 
 const stationBySlugQuery = defineQuery(`
-  *[_type == "station" && slug.current == $slug][0] {
-    _id, number, name, "slug": slug.current,
-    location, altitude, bearing, description, pedagogicalText, heroImage
-  }
+  *[_type == "station" && slug.current == $slug][0] { ${STATION_FIELDS} }
 `);
 
 const photosByStationQuery = defineQuery(`
@@ -44,6 +57,7 @@ const photosByStationQuery = defineQuery(`
 const stationsWithPreviewQuery = defineQuery(`
   *[_type == "station"] | order(number asc) {
     _id, number, name, "slug": slug.current, altitude, location,
+    "region": coalesce(region, "mercantour"),
     "photos": *[_type == "photo" && station._ref == ^._id && status == "approved"] | order(takenAt desc)[0...5] {
       _id, image, takenAt
     }
@@ -75,10 +89,28 @@ export type HomeDoc = {
   agungStatus?: string;
 };
 
-const homePageQuery = defineQuery(`*[_type == "homePage"][0]`);
+const homePageQuery = defineQuery(`*[_type == "homePage"][0]{
+  heroTitle,
+  ${loc("heroTagline")},
+  heroImage,
+  ${loc("heroCtaPrimary")},
+  ${loc("heroCtaSecondary")},
+  ${loc("projectTitle")},
+  ${loc("projectBody")},
+  projectImage,
+  howItWorksImage,
+  "howItWorksSteps": howItWorksSteps[]{
+    number,
+    ${loc("title")},
+    ${loc("body")}
+  },
+  ${loc("agungTitle")},
+  ${loc("agungBody")},
+  ${loc("agungStatus")}
+}`);
 
-export async function getHomePage(): Promise<HomeDoc | null> {
-  return client.fetch(homePageQuery, {}, { next: { revalidate: 60 } });
+export async function getHomePage(lang: Lang): Promise<HomeDoc | null> {
+  return client.fetch(homePageQuery, { lang }, { next: { revalidate: 60 } });
 }
 
 // — Site settings singleton (global chrome: nav, footer, contact)
@@ -97,10 +129,23 @@ export type SiteSettings = {
   contactAffiliation?: string;
 };
 
-const siteSettingsQuery = defineQuery(`*[_type == "siteSettings"][0]`);
+const siteSettingsQuery = defineQuery(`*[_type == "siteSettings"][0]{
+  siteName,
+  ${loc("siteDescription")},
+  "navLinks": navLinks[]{ ${loc("label")}, href },
+  ${loc("footerScienceTitle")},
+  footerScienceLines,
+  ${loc("footerOpenDataTitle")},
+  ${loc("footerOpenDataText")},
+  ${loc("footerTagline")},
+  contactName,
+  ${loc("contactRole")},
+  contactEmail,
+  contactAffiliation
+}`);
 
-export async function getSiteSettings(): Promise<SiteSettings | null> {
-  return client.fetch(siteSettingsQuery, {}, { next: { revalidate: 60 } });
+export async function getSiteSettings(lang: Lang): Promise<SiteSettings | null> {
+  return client.fetch(siteSettingsQuery, { lang }, { next: { revalidate: 60 } });
 }
 
 // — Publications
@@ -133,14 +178,15 @@ export async function getPartners(): Promise<Partner[]> {
   return client.fetch(partnersQuery, {}, { next: { revalidate: 60 } });
 }
 
-export async function getAllStations(): Promise<StationDoc[]> {
-  return client.fetch(allStationsQuery, {}, { next: { revalidate: 60 } });
+export async function getAllStations(lang: Lang = "fr"): Promise<StationDoc[]> {
+  return client.fetch(allStationsQuery, { lang }, { next: { revalidate: 60 } });
 }
 
 export async function getStationBySlug(
-  slug: string
+  slug: string,
+  lang: Lang
 ): Promise<StationDoc | null> {
-  return client.fetch(stationBySlugQuery, { slug }, { next: { revalidate: 60 } });
+  return client.fetch(stationBySlugQuery, { slug, lang }, { next: { revalidate: 60 } });
 }
 
 export async function getPhotosByStation(

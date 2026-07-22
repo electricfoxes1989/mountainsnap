@@ -1,27 +1,32 @@
 import Link from "next/link";
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import {
   getStationsWithPreview,
   getHomePage,
   getPublications,
   getPartners,
   getSiteSettings,
+  type StationWithPreview,
 } from "@/sanity/queries";
 import { urlFor } from "@/sanity/image";
 import { ContourLines } from "@/components/graphics/SectionDivider";
 import { LiveStats } from "@/components/LiveStats";
 import { SITE_URL } from "@/lib/seo";
+import { dict, isLang, type Lang } from "@/lib/i18n";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
 
-export async function generateMetadata(): Promise<Metadata> {
-  const home = await getHomePage();
-  const title =
-    "MountainSnap — Photographier l'évolution des paysages du Mercantour";
-  const description =
-    home?.heroTagline ??
-    "Un projet de recherche participative dans le Mercantour. Photographiez les paysages depuis des points d'observation fixes pour suivre leur évolution dans le temps.";
+type Props = { params: Promise<{ lang: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { lang } = await params;
+  if (!isLang(lang)) return {};
+  const t = dict[lang];
+  const home = await getHomePage(lang);
+  const title = t.metaTitle;
+  const description = home?.heroTagline ?? t.metaDescription;
   const ogImage = home?.heroImage
     ? urlFor(home.heroImage as never)
         .width(1200)
@@ -34,11 +39,14 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: "/" },
+    alternates: {
+      canonical: `/${lang}`,
+      languages: { fr: "/fr", en: "/en", id: "/id" },
+    },
     openGraph: {
       title,
       description,
-      url: SITE_URL,
+      url: `${SITE_URL}/${lang}`,
       ...(ogImage ? { images: [{ url: ogImage, width: 1200, height: 630 }] } : {}),
     },
     twitter: ogImage ? { images: [ogImage] } : undefined,
@@ -58,28 +66,93 @@ function paragraphs(text?: string): string[] {
     .filter(Boolean);
 }
 
-export default async function Home() {
+function StationBand({
+  stations,
+  lang,
+}: {
+  stations: StationWithPreview[];
+  lang: Lang;
+}) {
+  const t = dict[lang];
+  return (
+    <div className="mx-auto max-w-7xl px-6 lg:px-10 py-16 md:py-24 space-y-10">
+      {stations.length === 0 && (
+        <p className="text-center text-mauve-dark">{t.stationsEmpty}</p>
+      )}
+      {stations.map((s) => (
+        <article key={s._id} className="grid lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-3">
+            <h3 className="font-display font-extrabold text-foreground text-3xl md:text-4xl">
+              {t.station(s.number)}
+            </h3>
+            <p className="mt-1 text-mauve-dark text-sm">
+              {[s.name, s.altitude].filter(Boolean).join(" · ")}
+            </p>
+            <Link
+              href={`/${lang}/station/${s.slug}`}
+              className="mt-5 inline-flex items-center justify-center bg-primary text-white font-display font-bold px-7 py-3 rounded-full hover:bg-primary/90 transition-colors"
+            >
+              {t.uploadCta}
+            </Link>
+          </div>
+          <div className="lg:col-span-9 grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const photo = s.photos?.[i];
+              return (
+                <Link
+                  key={photo?._id ?? i}
+                  href={`/${lang}/station/${s.slug}`}
+                  className="aspect-square rounded-md ring-1 ring-border overflow-hidden bg-gradient-to-br from-clay/30 via-mauve/20 to-primary/30 block"
+                >
+                  {photo && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={urlFor(photo.image as never)
+                        .width(300)
+                        .height(300)
+                        .fit("crop")
+                        .quality(70)
+                        .url()}
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export default async function Home({ params }: Props) {
+  const { lang } = await params;
+  if (!isLang(lang)) notFound();
+  const t = dict[lang as Lang];
+
   const [stations, home, publications, partners, settings] = await Promise.all([
     getStationsWithPreview(),
-    getHomePage(),
+    getHomePage(lang),
     getPublications(),
     getPartners(),
-    getSiteSettings(),
+    getSiteSettings(lang),
   ]);
 
+  const mercantourStations = stations.filter((s) => s.region !== "agung");
+  const agungStations = stations.filter((s) => s.region === "agung");
+
   const heroTitle = home?.heroTitle ?? "MountainSnap";
-  const heroTagline =
-    home?.heroTagline ??
-    "Snap, share, understand : vos photographies révèlent comment les montagnes changent et exposent les risques cachés — du Parc national du Mercantour au Mont Agung.";
+  const heroTagline = home?.heroTagline ?? t.metaDescription;
   const heroImage = home?.heroImage
     ? urlFor(home.heroImage as never).width(2400).quality(85).url()
     : FALLBACK_HERO;
-  const heroCtaPrimary = home?.heroCtaPrimary ?? "Voir les stations";
-  const heroCtaSecondary = home?.heroCtaSecondary ?? "Découvrir le projet";
+  const heroCtaPrimary = home?.heroCtaPrimary ?? t.uploadCta;
+  const heroCtaSecondary = home?.heroCtaSecondary ?? "";
 
-  const projectTitle =
-    home?.projectTitle ??
-    "MountainSnap, un projet de science participative au cœur de la recherche sur les risques naturels et les paysages.";
+  const projectTitle = home?.projectTitle ?? "";
   const projectParas = paragraphs(home?.projectBody);
   const projectImage = home?.projectImage
     ? urlFor(home.projectImage as never).width(1600).quality(85).url()
@@ -91,36 +164,16 @@ export default async function Home() {
   const howSteps =
     home?.howItWorksSteps && home.howItWorksSteps.length === 3
       ? home.howItWorksSteps
-      : [
-          {
-            number: "1",
-            title: "OBSERVE",
-            body: "Explorez les paysages de montagne et approfondissez votre compréhension des processus géomorphologiques et des risques naturels.",
-          },
-          {
-            number: "2",
-            title: "SNAP",
-            body: "Posez votre téléphone sur le support dédié pour capturer exactement le même cadrage à chaque visite.",
-          },
-          {
-            number: "3",
-            title: "SHARE !",
-            body: "Déposez la photographie sur la plateforme, contribuez à la communauté et restez informé des évolutions du paysage.",
-          },
-        ];
+      : [];
 
-  const agungTitle = home?.agungTitle ?? "Mont Agung — Bali";
-  const agungBody =
-    home?.agungBody ??
-    "Le programme s'étendra prochainement aux pentes du Mont Agung, volcan actif de Bali. De nouvelles stations seront installées en collaboration avec les communautés locales pour documenter les risques volcaniques et les transformations du paysage.";
-  const agungStatus = home?.agungStatus ?? "Stations à venir";
+  const agungTitle = home?.agungTitle ?? "";
+  const agungBody = home?.agungBody ?? "";
+  const agungStatus = home?.agungStatus ?? "";
 
   const contactName = settings?.contactName ?? "Anna Minnema";
-  const contactRole = settings?.contactRole ?? "coordinatrice scientifique";
+  const contactRole = settings?.contactRole ?? "";
   const contactEmail = settings?.contactEmail ?? "Anna.minnema@univ-paris1.fr";
-  const contactAffiliation =
-    settings?.contactAffiliation ??
-    "Université Paris 1 Panthéon-Sorbonne · Laboratoire de Géographie Physique";
+  const contactAffiliation = settings?.contactAffiliation ?? "";
 
   return (
     <>
@@ -135,7 +188,7 @@ export default async function Home() {
                 "@id": `${SITE_URL}/#website`,
                 url: SITE_URL,
                 name: "MountainSnap",
-                inLanguage: "fr",
+                inLanguage: lang,
                 description: heroTagline,
               },
               {
@@ -175,12 +228,14 @@ export default async function Home() {
               {heroCtaPrimary}
               <span aria-hidden>→</span>
             </Link>
-            <Link
-              href="#projet"
-              className="font-display font-semibold inline-flex items-center gap-2 bg-white/10 ring-1 ring-white/40 backdrop-blur-sm text-white px-8 py-4 rounded-full text-sm md:text-base hover:bg-white/20 transition-colors"
-            >
-              {heroCtaSecondary}
-            </Link>
+            {heroCtaSecondary && (
+              <Link
+                href="#projet"
+                className="font-display font-semibold inline-flex items-center gap-2 bg-white/10 ring-1 ring-white/40 backdrop-blur-sm text-white px-8 py-4 rounded-full text-sm md:text-base hover:bg-white/20 transition-colors"
+              >
+                {heroCtaSecondary}
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -188,7 +243,7 @@ export default async function Home() {
       {/* Stats strip */}
       <section className="bg-background py-10 md:py-14">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <LiveStats />
+          <LiveStats lang={lang} />
         </div>
       </section>
 
@@ -197,7 +252,7 @@ export default async function Home() {
         <section className="bg-surface py-10 border-y border-border/60">
           <div className="mx-auto max-w-7xl px-6 lg:px-10">
             <p className="text-center text-xs uppercase tracking-[0.3em] text-mauve-dark mb-6">
-              Partenaires & soutiens
+              {t.partnersHeading}
             </p>
             <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
               {partners.map((p) => {
@@ -244,7 +299,7 @@ export default async function Home() {
             <div className="mt-14 mx-auto max-w-4xl aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-border relative">
               <Image
                 src={projectImage}
-                alt="Illustration du projet MountainSnap"
+                alt={t.projectImageAlt}
                 fill
                 sizes="(min-width: 1024px) 56rem, 100vw"
                 className="object-cover"
@@ -262,7 +317,7 @@ export default async function Home() {
             <div className="lg:col-span-5 aspect-[4/3] rounded-2xl overflow-hidden ring-1 ring-border bg-mauve/10 relative">
               <Image
                 src={howImage}
-                alt="Paysage de montagne capturé depuis un point d'observation"
+                alt={t.howImageAlt}
                 fill
                 sizes="(min-width: 1024px) 40vw, 100vw"
                 className="object-cover"
@@ -291,76 +346,22 @@ export default async function Home() {
       <section id="mercantour" className="bg-surface">
         <div className="bg-mauve text-white text-center py-3">
           <p className="font-display font-extrabold tracking-wide text-sm md:text-base">
-            STATIONS · PARC NATIONAL DU MERCANTOUR
+            {t.stationsBannerMercantour}
           </p>
         </div>
-        <div className="mx-auto max-w-7xl px-6 lg:px-10 py-16 md:py-24 space-y-10">
-          {stations.length === 0 && (
-            <p className="text-center text-mauve-dark">
-              Les stations seront bientôt disponibles.
-            </p>
-          )}
-          {stations.map((s) => (
-            <article
-              key={s._id}
-              className="grid lg:grid-cols-12 gap-6 items-center"
-            >
-              <div className="lg:col-span-3">
-                <h3 className="font-display font-extrabold text-foreground text-3xl md:text-4xl">
-                  Station n°{s.number}
-                </h3>
-                <p className="mt-1 text-mauve-dark text-sm">
-                  {[s.name, s.altitude].filter(Boolean).join(" · ")}
-                </p>
-                <Link
-                  href={`/station/${s.slug}`}
-                  className="mt-5 inline-flex items-center justify-center bg-primary text-white font-display font-bold px-7 py-3 rounded-full hover:bg-primary/90 transition-colors"
-                >
-                  PUBLIER
-                </Link>
-              </div>
-              <div className="lg:col-span-9 grid grid-cols-3 sm:grid-cols-5 gap-2">
-                {Array.from({ length: 5 }).map((_, i) => {
-                  const photo = s.photos?.[i];
-                  return (
-                    <Link
-                      key={photo?._id ?? i}
-                      href={`/station/${s.slug}`}
-                      className="aspect-square rounded-md ring-1 ring-border overflow-hidden bg-gradient-to-br from-clay/30 via-mauve/20 to-primary/30 block"
-                    >
-                      {photo && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={urlFor(photo.image as never)
-                            .width(300)
-                            .height(300)
-                            .fit("crop")
-                            .quality(70)
-                            .url()}
-                          alt=""
-                          loading="lazy"
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </article>
-          ))}
-        </div>
+        <StationBand stations={mercantourStations} lang={lang} />
         <div className="bg-mauve text-white text-center py-3 mt-2">
           <p className="font-display font-extrabold tracking-wide text-xs md:text-sm">
-            TEXTE PÉDAGOGIQUE — PHÉNOMÈNE OBSERVÉ
+            {t.pedagogicalBanner}
           </p>
         </div>
       </section>
 
-      {/* Agung */}
+      {/* Agung — Indonesia section */}
       <section id="agung" className="bg-background py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-6 lg:px-10 text-center">
           <p className="text-xs uppercase tracking-[0.3em] text-mauve-dark">
-            Extension internationale
+            {t.intlExtension}
           </p>
           <h2 className="mt-3 font-display font-extrabold text-primary text-3xl md:text-5xl">
             {agungTitle}
@@ -368,12 +369,22 @@ export default async function Home() {
           <p className="mt-6 mx-auto max-w-2xl font-italic-serif text-lg md:text-xl text-foreground/80 leading-relaxed whitespace-pre-line">
             {agungBody}
           </p>
-          {agungStatus && (
+          {agungStations.length === 0 && agungStatus && (
             <p className="mt-8 inline-block font-display font-bold uppercase tracking-wider text-xs px-4 py-2 rounded-full bg-mauve/15 text-mauve-dark">
               {agungStatus}
             </p>
           )}
         </div>
+        {agungStations.length > 0 && (
+          <div className="mt-14 bg-surface">
+            <div className="bg-mauve text-white text-center py-3">
+              <p className="font-display font-extrabold tracking-wide text-sm md:text-base">
+                {t.stationsBannerAgung}
+              </p>
+            </div>
+            <StationBand stations={agungStations} lang={lang} />
+          </div>
+        )}
       </section>
 
       {/* Resources */}
@@ -385,7 +396,7 @@ export default async function Home() {
         <div className="relative mx-auto max-w-5xl px-6 lg:px-10 grid md:grid-cols-2 gap-16">
           <div>
             <h2 className="font-display font-extrabold text-primary text-3xl md:text-4xl">
-              Publications
+              {t.publicationsHeading}
             </h2>
             {publications.length > 0 ? (
               <ul className="mt-6 space-y-3 list-disc list-inside text-foreground/85 leading-relaxed">
@@ -407,14 +418,12 @@ export default async function Home() {
                 ))}
               </ul>
             ) : (
-              <p className="mt-6 text-mauve-dark italic">
-                Les publications seront annoncées au fur et à mesure.
-              </p>
+              <p className="mt-6 text-mauve-dark italic">{t.publicationsEmpty}</p>
             )}
           </div>
           <div>
             <h2 className="font-display font-extrabold text-primary text-3xl md:text-4xl">
-              Contact
+              {t.contactHeading}
             </h2>
             <p className="mt-6 text-foreground/85">
               {contactName}
