@@ -6,28 +6,30 @@ import { Gallery } from "@/components/Gallery";
 import { ContourLines } from "@/components/graphics/SectionDivider";
 import { urlFor } from "@/sanity/image";
 import { SITE_URL } from "@/lib/seo";
+import { dict, isLang, locales, type Lang } from "@/lib/i18n";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
 
+type Props = { params: Promise<{ lang: string; id: string }> };
+
 export async function generateStaticParams() {
   const stations = await getAllStations();
-  return stations.map((s) => ({ id: s.slug }));
+  return locales.flatMap((lang) =>
+    stations.map((s) => ({ lang, id: s.slug }))
+  );
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const { id } = await params;
-  const station = await getStationBySlug(id);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { lang, id } = await params;
+  if (!isLang(lang)) return {};
+  const t = dict[lang];
+  const station = await getStationBySlug(id, lang);
   if (!station) return {};
-  const title = `Station n°${station.number} — ${station.name}`;
+  const title = `${t.station(station.number)} — ${station.name}`;
   const description =
-    station.description ??
-    `Point d'observation n°${station.number} dans le Mercantour : ${station.name}. Photographiez le paysage depuis le repère fixe pour suivre son évolution.`;
-  const canonical = `/station/${station.slug}`;
+    station.description ?? t.stationMetaDescription(station.number, station.name);
+  const canonical = `/${lang}/station/${station.slug}`;
   const ogImage = station.heroImage
     ? urlFor(station.heroImage as never)
         .width(1200)
@@ -39,7 +41,14 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical },
+    alternates: {
+      canonical,
+      languages: {
+        fr: `/fr/station/${station.slug}`,
+        en: `/en/station/${station.slug}`,
+        id: `/id/station/${station.slug}`,
+      },
+    },
     openGraph: {
       type: "article",
       title,
@@ -51,18 +60,17 @@ export async function generateMetadata({
   };
 }
 
-export default async function StationPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const station = await getStationBySlug(id);
+export default async function StationPage({ params }: Props) {
+  const { lang, id } = await params;
+  if (!isLang(lang)) notFound();
+  const t = dict[lang as Lang];
+
+  const station = await getStationBySlug(id, lang);
   if (!station) notFound();
 
   const [photos, allStations] = await Promise.all([
     getPhotosByStation(station._id),
-    getAllStations(),
+    getAllStations(lang),
   ]);
 
   return (
@@ -77,14 +85,14 @@ export default async function StationPage({
               {
                 "@type": "ListItem",
                 position: 1,
-                name: "Accueil",
-                item: SITE_URL,
+                name: t.breadcrumbHome,
+                item: `${SITE_URL}/${lang}`,
               },
               {
                 "@type": "ListItem",
                 position: 2,
-                name: `Station n°${station.number} — ${station.name}`,
-                item: `${SITE_URL}/station/${station.slug}`,
+                name: `${t.station(station.number)} — ${station.name}`,
+                item: `${SITE_URL}/${lang}/station/${station.slug}`,
               },
             ],
           }),
@@ -93,7 +101,7 @@ export default async function StationPage({
       {/* Mauve banner */}
       <div className="bg-mauve text-white text-center py-3">
         <p className="font-display font-extrabold tracking-wide text-sm md:text-base">
-          MERCANTOUR · STATION N°{station.number}
+          {t.stationBanner(station.region, station.number)}
         </p>
       </div>
 
@@ -103,20 +111,24 @@ export default async function StationPage({
         <div className="relative mx-auto max-w-7xl px-6 lg:px-10 pt-12 pb-16 lg:pt-16 lg:pb-20">
           <div className="flex items-center gap-2 text-xs">
             <Link
-              href="/"
+              href={`/${lang}`}
               className="px-3 py-1 rounded-full bg-background ring-1 ring-border text-foreground/70 hover:text-primary transition-colors"
             >
-              ← Retour
+              {t.back}
             </Link>
           </div>
           <h1 className="mt-8 font-display font-extrabold text-foreground text-4xl md:text-6xl">
-            Station n°{station.number}
+            {t.station(station.number)}
           </h1>
           <p className="mt-3 font-display font-bold text-primary text-2xl md:text-3xl">
             {station.name}
           </p>
           <p className="mt-2 text-mauve-dark text-sm md:text-base">
-            {[station.location, station.altitude && `Altitude ${station.altitude}`, station.bearing && `Orientation ${station.bearing}`]
+            {[
+              station.location,
+              station.altitude && `${t.altitudeLabel} ${station.altitude}`,
+              station.bearing && `${t.bearingLabel} ${station.bearing}`,
+            ]
               .filter(Boolean)
               .join(" · ")}
           </p>
@@ -133,17 +145,15 @@ export default async function StationPage({
         <div className="mx-auto max-w-3xl px-6 lg:px-10 py-16 md:py-20">
           <div className="text-center mb-8">
             <h2 className="font-display font-extrabold text-primary text-3xl md:text-4xl">
-              Publier votre photographie
+              {t.uploadHeading}
             </h2>
-            <p className="mt-3 text-mauve-dark">
-              Cadrez selon le repère du poste, puis déposez votre image.
-            </p>
+            <p className="mt-3 text-mauve-dark">{t.uploadSub}</p>
           </div>
           <UploadForm
             stationId={station._id}
             stationSlug={station.slug}
-            stationName={station.name}
             stationNumber={station.number}
+            lang={lang}
           />
         </div>
       </section>
@@ -153,7 +163,7 @@ export default async function StationPage({
         <section className="bg-mauve text-white">
           <div className="mx-auto max-w-3xl px-6 lg:px-10 py-12 md:py-16 text-center">
             <p className="font-display font-extrabold text-xl md:text-2xl mb-4">
-              Phénomène observé
+              {t.pedagogicalBanner}
             </p>
             <p className="leading-relaxed text-white/90">
               {station.pedagogicalText}
@@ -166,39 +176,34 @@ export default async function StationPage({
       <section className="bg-surface">
         <div className="bg-mauve text-white text-center py-3">
           <p className="font-display font-extrabold tracking-wide text-sm md:text-base">
-            ARCHIVE · STATION N°{station.number}
+            {t.archiveBanner(station.number)}
           </p>
         </div>
         <div className="mx-auto max-w-7xl px-6 lg:px-10 py-16 md:py-20">
           <div className="flex items-end justify-between flex-wrap gap-4 mb-10">
             <h2 className="font-display font-extrabold text-primary text-3xl md:text-4xl">
-              Photographies précédentes
+              {t.previousPhotos}
             </h2>
-            <p className="text-sm text-mauve-dark">
-              {photos.length} photographie{photos.length > 1 ? "s" : ""} · ordre
-              chronologique
-            </p>
+            <p className="text-sm text-mauve-dark">{t.photoCount(photos.length)}</p>
           </div>
-          <Gallery photos={photos} />
+          <Gallery photos={photos} lang={lang} />
         </div>
       </section>
 
       {/* Other stations */}
       <section className="bg-background py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-10">
-          <p className="text-mauve-dark text-sm mb-6">
-            Autres stations dans le Mercantour
-          </p>
+          <p className="text-mauve-dark text-sm mb-6">{t.otherStations}</p>
           <ul className="flex flex-wrap gap-3">
             {allStations
               .filter((s) => s._id !== station._id)
               .map((s) => (
                 <li key={s._id}>
                   <Link
-                    href={`/station/${s.slug}`}
+                    href={`/${lang}/station/${s.slug}`}
                     className="px-5 py-3 rounded-full bg-surface ring-1 ring-border hover:ring-primary text-sm font-display font-bold text-foreground hover:text-primary transition-colors"
                   >
-                    Station n°{s.number} · {s.name}
+                    {t.station(s.number)} · {s.name}
                   </Link>
                 </li>
               ))}

@@ -1,21 +1,18 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { uploadPhoto, type UploadResult } from "@/app/(site)/station/[id]/actions";
+import { uploadPhoto, type UploadResult } from "@/app/(site)/[lang]/station/[id]/actions";
+import { dict, type Lang } from "@/lib/i18n";
 
 type Props = {
   stationId: string;
   stationSlug: string;
-  stationName: string;
   stationNumber: number;
+  lang: Lang;
 };
 
-export function UploadForm({
-  stationId,
-  stationSlug,
-  stationName,
-  stationNumber,
-}: Props) {
+export function UploadForm({ stationId, stationSlug, stationNumber, lang }: Props) {
+  const t = dict[lang];
   const [preview, setPreview] = useState<string | null>(null);
   const [filename, setFilename] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -55,15 +52,14 @@ export function UploadForm({
     >
       <input type="hidden" name="stationId" value={stationId} />
       <input type="hidden" name="stationSlug" value={stationSlug} />
+      <input type="hidden" name="lang" value={lang} />
       {/* The single file input that actually gets submitted */}
       <input ref={photoInputRef} type="file" name="photo" accept="image/*" className="sr-only" />
 
       <div className="flex items-baseline justify-between mb-8">
-        <p className="font-display font-bold text-xl text-primary">
-          Déposer une photographie
-        </p>
+        <p className="font-display font-bold text-xl text-primary">{t.formTitle}</p>
         <p className="text-xs uppercase tracking-[0.2em] text-muted">
-          Station {String(stationNumber).padStart(2, "0")}
+          {t.formStation(String(stationNumber).padStart(2, "0"))}
         </p>
       </div>
 
@@ -75,7 +71,7 @@ export function UploadForm({
             className="group aspect-[4/3] sm:aspect-square rounded-2xl border border-dashed border-border hover:border-primary hover:bg-surface transition-colors flex flex-col items-center justify-center gap-2 text-foreground/70 hover:text-primary"
           >
             <span className="font-display text-3xl text-accent">+</span>
-            <span className="text-sm">Choisir depuis la galerie</span>
+            <span className="text-sm">{t.chooseGallery}</span>
           </button>
           <button
             type="button"
@@ -83,7 +79,7 @@ export function UploadForm({
             className="group aspect-[4/3] sm:aspect-square rounded-2xl border border-dashed border-border hover:border-primary hover:bg-surface transition-colors flex flex-col items-center justify-center gap-2 text-foreground/70 hover:text-primary"
           >
             <span className="font-display text-3xl text-accent">○</span>
-            <span className="text-sm">Prendre une photo</span>
+            <span className="text-sm">{t.takePhoto}</span>
           </button>
 
           <input
@@ -108,7 +104,7 @@ export function UploadForm({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
-              alt="Aperçu de votre photographie"
+              alt={t.previewAlt}
               className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
@@ -119,7 +115,7 @@ export function UploadForm({
               onClick={reset}
               className="text-primary hover:underline"
             >
-              Choisir une autre photo
+              {t.chooseAnother}
             </button>
           </div>
 
@@ -128,11 +124,10 @@ export function UploadForm({
             disabled={pending}
             className="w-full bg-primary text-white py-4 rounded-full font-display font-extrabold tracking-wider hover:bg-primary/90 disabled:opacity-60 transition-colors"
           >
-            {pending ? "Envoi en cours…" : "PUBLIER"}
+            {pending ? t.submitting : t.submit}
           </button>
           <p className="text-xs text-muted text-center leading-relaxed">
-            Votre photographie sera validée par l&rsquo;équipe scientifique
-            avant publication · Aucune information personnelle requise.
+            {t.moderationNote}
           </p>
         </div>
       )}
@@ -140,12 +135,9 @@ export function UploadForm({
       {state?.ok && (
         <div className="mt-6 text-center">
           <p className="font-display font-bold text-primary text-lg">
-            Merci pour votre envoi !
+            {t.successTitle}
           </p>
-          <p className="mt-1 text-sm text-muted">
-            Elle sera publiée dans la galerie après validation par
-            l&rsquo;équipe scientifique.
-          </p>
+          <p className="mt-1 text-sm text-muted">{t.successBody}</p>
         </div>
       )}
       {state && !state.ok && (

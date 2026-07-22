@@ -1,25 +1,24 @@
 import type { PhotoDoc } from "@/sanity/queries";
 import { urlFor } from "@/sanity/image";
+import { dict, type Lang } from "@/lib/i18n";
 
-const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
+export function Gallery({ photos, lang }: { photos: PhotoDoc[]; lang: Lang }) {
+  const t = dict[lang];
+  const dateFormatter = new Intl.DateTimeFormat(t.dateLocale, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const formatDate = (iso?: string) =>
+    iso ? dateFormatter.format(new Date(iso)) : "";
 
-function formatDate(iso?: string) {
-  if (!iso) return "";
-  return dateFormatter.format(new Date(iso));
-}
-
-export function Gallery({ photos }: { photos: PhotoDoc[] }) {
   if (photos.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border p-12 text-center text-muted">
         <p className="font-display font-bold text-xl text-foreground/80">
-          Aucune photographie pour l&rsquo;instant.
+          {t.galleryEmptyTitle}
         </p>
-        <p className="mt-2 text-sm">Soyez la première personne à contribuer.</p>
+        <p className="mt-2 text-sm">{t.galleryEmptyBody}</p>
       </div>
     );
   }
@@ -41,7 +40,7 @@ export function Gallery({ photos }: { photos: PhotoDoc[] }) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={thumb}
-                  alt={`Photographie déposée le ${formatDate(photo.takenAt)}`}
+                  alt={t.photoAlt(formatDate(photo.takenAt))}
                   loading="lazy"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -53,9 +52,9 @@ export function Gallery({ photos }: { photos: PhotoDoc[] }) {
                 <a
                   href={`${full}?dl=`}
                   className="text-primary hover:underline whitespace-nowrap"
-                  aria-label="Télécharger cette photographie"
+                  aria-label={t.downloadAria}
                 >
-                  Télécharger ↓
+                  {t.download}
                 </a>
               </figcaption>
             </figure>

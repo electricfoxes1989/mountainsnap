@@ -23,8 +23,7 @@ export const siteSettings = defineType({
     defineField({
       name: "siteDescription",
       title: "Description (pied de page)",
-      type: "text",
-      rows: 3,
+      type: "localeText",
       description: "Court paragraphe affiché sous le logo dans le pied de page.",
       group: "general",
     }),
@@ -44,8 +43,7 @@ export const siteSettings = defineType({
             {
               name: "label",
               title: "Texte",
-              type: "string",
-              validation: (r) => r.required(),
+              type: "localeString",
             },
             {
               name: "href",
@@ -56,7 +54,7 @@ export const siteSettings = defineType({
             },
           ],
           preview: {
-            select: { title: "label", subtitle: "href" },
+            select: { title: "label.fr", subtitle: "href" },
           },
         },
       ],
@@ -66,9 +64,8 @@ export const siteSettings = defineType({
     defineField({
       name: "footerScienceTitle",
       title: "Bloc 1 — Titre",
-      type: "string",
+      type: "localeString",
       group: "footer",
-      initialValue: "Cadre scientifique",
     }),
     defineField({
       name: "footerScienceLines",
@@ -81,28 +78,26 @@ export const siteSettings = defineType({
     defineField({
       name: "footerOpenDataTitle",
       title: "Bloc 2 — Titre",
-      type: "string",
+      type: "localeString",
       group: "footer",
-      initialValue: "Données ouvertes",
     }),
     defineField({
       name: "footerOpenDataText",
       title: "Bloc 2 — Texte",
-      type: "text",
-      rows: 3,
+      type: "localeText",
       group: "footer",
     }),
     defineField({
       name: "footerTagline",
       title: "Mention basse (sous le copyright)",
-      type: "string",
+      type: "localeString",
       group: "footer",
       description: "Ex : « Mercantour, Alpes-Maritimes · Mont Agung, Bali »",
     }),
 
     // — Contact
     defineField({ name: "contactName", title: "Nom", type: "string", group: "contact" }),
-    defineField({ name: "contactRole", title: "Fonction", type: "string", group: "contact" }),
+    defineField({ name: "contactRole", title: "Fonction", type: "localeString", group: "contact" }),
     defineField({ name: "contactEmail", title: "E-mail", type: "string", group: "contact" }),
     defineField({
       name: "contactAffiliation",

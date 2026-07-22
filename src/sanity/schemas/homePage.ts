@@ -22,8 +22,7 @@ export const homePage = defineType({
     defineField({
       name: "heroTagline",
       title: "Tagline (texte en italique)",
-      type: "text",
-      rows: 3,
+      type: "localeText",
       group: "hero",
     }),
     defineField({
@@ -37,13 +36,13 @@ export const homePage = defineType({
     defineField({
       name: "heroCtaPrimary",
       title: "Bouton principal — texte",
-      type: "string",
+      type: "localeString",
       group: "hero",
     }),
     defineField({
       name: "heroCtaSecondary",
       title: "Bouton secondaire — texte",
-      type: "string",
+      type: "localeString",
       group: "hero",
     }),
 
@@ -51,15 +50,13 @@ export const homePage = defineType({
     defineField({
       name: "projectTitle",
       title: "Titre de section",
-      type: "text",
-      rows: 3,
+      type: "localeText",
       group: "project",
     }),
     defineField({
       name: "projectBody",
       title: "Texte du projet",
-      type: "text",
-      rows: 12,
+      type: "localeText",
       description:
         "Séparez les paragraphes par une ligne vide (touche Entrée deux fois).",
       group: "project",
@@ -93,11 +90,11 @@ export const homePage = defineType({
           type: "object",
           fields: [
             { name: "number", title: "Numéro", type: "string", validation: (r) => r.required() },
-            { name: "title", title: "Titre", type: "string", validation: (r) => r.required() },
-            { name: "body", title: "Description", type: "text", rows: 3 },
+            { name: "title", title: "Titre", type: "localeString" },
+            { name: "body", title: "Description", type: "localeText" },
           ],
           preview: {
-            select: { title: "title", subtitle: "number" },
+            select: { title: "title.fr", subtitle: "number" },
             prepare: ({ title, subtitle }) => ({ title, subtitle: `Étape ${subtitle}` }),
           },
         },
@@ -108,20 +105,19 @@ export const homePage = defineType({
     defineField({
       name: "agungTitle",
       title: "Titre",
-      type: "string",
+      type: "localeString",
       group: "agung",
     }),
     defineField({
       name: "agungBody",
       title: "Texte",
-      type: "text",
-      rows: 6,
+      type: "localeText",
       group: "agung",
     }),
     defineField({
       name: "agungStatus",
       title: "Étiquette (badge)",
-      type: "string",
+      type: "localeString",
       description: "Ex : « Stations à venir »",
       group: "agung",
     }),

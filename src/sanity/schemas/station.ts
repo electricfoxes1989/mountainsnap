@@ -25,20 +25,32 @@ export const station = defineType({
       options: { source: (doc) => String(doc.number ?? "") },
       validation: (r) => r.required(),
     }),
+    defineField({
+      name: "region",
+      title: "Région",
+      type: "string",
+      initialValue: "mercantour",
+      options: {
+        list: [
+          { value: "mercantour", title: "Mercantour" },
+          { value: "agung", title: "Mont Agung — Bali" },
+        ],
+        layout: "radio",
+      },
+      validation: (r) => r.required(),
+    }),
     defineField({ name: "location", title: "Lieu", type: "string" }),
     defineField({ name: "altitude", title: "Altitude", type: "string" }),
-    defineField({ name: "bearing", title: "Orientation", type: "string" }),
+    defineField({ name: "bearing", title: "Orientation", type: "localeString" }),
     defineField({
       name: "description",
       title: "Description",
-      type: "text",
-      rows: 4,
+      type: "localeText",
     }),
     defineField({
       name: "pedagogicalText",
       title: "Texte pédagogique (phénomène observé)",
-      type: "text",
-      rows: 4,
+      type: "localeText",
     }),
     defineField({
       name: "heroImage",

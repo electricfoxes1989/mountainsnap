@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import exifr from "exifr";
 import { writeClient } from "@/sanity/client";
+import { dict, defaultLang, isLang, locales, type Lang } from "@/lib/i18n";
 
 export type UploadResult =
   | { ok: true }
@@ -18,22 +19,26 @@ export async function uploadPhoto(
   const file = formData.get("photo");
   const stationId = formData.get("stationId");
   const stationSlug = formData.get("stationSlug");
+  const rawLang = formData.get("lang");
+  const lang: Lang =
+    typeof rawLang === "string" && isLang(rawLang) ? rawLang : defaultLang;
+  const t = dict[lang];
 
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Aucune photographie sélectionnée." };
+    return { ok: false, error: t.errNoFile };
   }
   if (typeof stationId !== "string" || !stationId) {
-    return { ok: false, error: "Station introuvable." };
+    return { ok: false, error: t.errNoStation };
   }
   if (file.size > MAX_BYTES) {
-    return { ok: false, error: "La photographie dépasse 15 Mo." };
+    return { ok: false, error: t.errTooBig };
   }
   if (file.type && !ACCEPTED.includes(file.type)) {
-    return { ok: false, error: "Format non pris en charge." };
+    return { ok: false, error: t.errBadFormat };
   }
 
   if (!process.env.SANITY_API_WRITE_TOKEN) {
-    return { ok: false, error: "Service de dépôt non configuré." };
+    return { ok: false, error: t.errNotConfigured };
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -91,16 +96,15 @@ export async function uploadPhoto(
       ...(exif ? { exif } : {}),
     });
   } catch {
-    return {
-      ok: false,
-      error: "Le dépôt a échoué. Merci de réessayer dans un instant.",
-    };
+    return { ok: false, error: t.errFailed };
   }
 
-  if (typeof stationSlug === "string" && stationSlug) {
-    revalidatePath(`/station/${stationSlug}`);
+  for (const locale of locales) {
+    if (typeof stationSlug === "string" && stationSlug) {
+      revalidatePath(`/${locale}/station/${stationSlug}`);
+    }
+    revalidatePath(`/${locale}`);
   }
-  revalidatePath("/");
 
   return { ok: true };
 }
