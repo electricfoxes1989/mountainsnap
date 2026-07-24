@@ -10,6 +10,9 @@ import { dict, isLang, locales, type Lang } from "@/lib/i18n";
 import type { Metadata } from "next";
 
 export const revalidate = 60;
+// Render stations added after the last build on demand (ISR), so a new Agung /
+// Mercantour station goes live from the Studio without a redeploy.
+export const dynamicParams = true;
 
 type Props = { params: Promise<{ lang: string; id: string }> };
 
