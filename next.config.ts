@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Default is 1 MB, which rejects almost every phone photo.
+      // Matches MAX_BYTES in the upload action (plus form overhead).
+      bodySizeLimit: "16mb",
+    },
+  },
   images: {
     remotePatterns: [
       {

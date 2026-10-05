@@ -79,6 +79,16 @@ export async function uploadPhoto(
     // ignore EXIF errors
   }
 
+  // The browser resizes photos before sending, which strips EXIF — so it reads
+  // the metadata first and sends it alongside. Use it when the file has none.
+  if (!exif) {
+    const clientExif = parseClientExif(formData.get("exif"));
+    if (clientExif) {
+      exif = clientExif;
+      takenAt = clientExif.dateTimeOriginal;
+    }
+  }
+
   const now = new Date().toISOString();
 
   try {
@@ -107,4 +117,28 @@ export async function uploadPhoto(
   }
 
   return { ok: true };
+}
+
+function parseClientExif(raw: FormDataEntryValue | null) {
+  if (typeof raw !== "string" || !raw || raw.length > 2000) return undefined;
+  try {
+    const v = JSON.parse(raw) as Record<string, unknown>;
+    const date =
+      typeof v.dateTimeOriginal === "string" && !isNaN(Date.parse(v.dateTimeOriginal))
+        ? new Date(v.dateTimeOriginal).toISOString()
+        : undefined;
+    const num = (n: unknown) =>
+      typeof n === "number" && Number.isFinite(n) ? n : undefined;
+    const str = (x: unknown) =>
+      typeof x === "string" && x ? x.slice(0, 100) : undefined;
+    return {
+      dateTimeOriginal: date,
+      latitude: num(v.latitude),
+      longitude: num(v.longitude),
+      make: str(v.make),
+      model: str(v.model),
+    };
+  } catch {
+    return undefined;
+  }
 }
